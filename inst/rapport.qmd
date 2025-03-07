@@ -3,13 +3,13 @@ title: "Rapport Quarto"
 author: "Estelle"
 format: html
 params:
-  commune: "Nom par défaut"
-  departement: "Nom par défaut"
+  commune: "44109"
+  departement: "44"
 ---
 
 ```{r}
 # Chargement des librairies nécessaires
-packages <- c("dplyr", "ggplot2", "remotes", "quarto")
+packages <- c("dplyr", "ggplot2", "remotes", "quarto", "firstlibEstelle")
 installed <- rownames(installed.packages())
 
 for (pkg in packages) {
@@ -17,74 +17,139 @@ for (pkg in packages) {
   library(pkg, character.only = TRUE)
 }
 
-
-# Installation et chargement de la librairie depuis GitHub
+# Installation et chargement de la librairie depuis GitHub (si nécessaire)
 if (!requireNamespace("firstlibEstelle", quietly = TRUE)) {
   remotes::install_github("estellemtz/firstlibEstelle")
 }
 library(firstlibEstelle)
+
 ```
 
 #chargement des données
 
 ```{r}
-# Charger les données
+# Charger les données des élus
 elus_conseillers <- load_elus_conseillers()
+
+# Vérification et nettoyage des noms de colonnes
 colnames(elus_conseillers) <- make.names(colnames(elus_conseillers))
 head(elus_conseillers)
+
 
 ```
 
 #Filtrage des données en fonction des paramètres
 
 ```{r}
-# Récupération des paramètres
-code_commune <- params$commune
-code_departement <- params$departement
+## Récupération des paramètres passés par Quarto
+code_commune <- params$commune  # 44109 = Nantes
+code_departement <- params$departement  # 44 = Loire-Atlantique
 
-# Vérification des noms de colonnes après standardisation
+# Vérification des colonnes
 nom_col_commune <- "Code.de.la.commune"
-nom_col_departement <- "Code.du.departement"
+nom_col_departement <- "Code.du.département"
 
-commune_data <- elus_conseillers %>%
+# Filtrage des données pour Nantes
+nantes_data <- elus_conseillers %>%
   filter(.data[[nom_col_commune]] == code_commune)
 
-departement_data <- elus_conseillers %>%
+# Filtrage des données pour Loire-Atlantique
+loire_atlantique_data <- elus_conseillers %>%
   filter(.data[[nom_col_departement]] == code_departement)
 
-if (nrow(commune_data) == 0) stop(" Aucune donnée trouvée pour cette commune.")
-if (nrow(departement_data) == 0) stop("Aucune donnée trouvée pour ce département.")
+# Vérification de la présence de données
+if (nrow(nantes_data) == 0) stop("Aucune donnée trouvée pour Nantes.")
+if (nrow(loire_atlantique_data) == 0) stop("Aucune donnée trouvée pour Loire-Atlantique.")
 
 ```
+
 
 #Création des objets commune et département
 
 ```{r}
-commune_objet <- creer_commune(commune_data)
-departement_objet <- creer_departement(departement_data)
 
-summary(commune_objet)
-summary(departement_objet)
+# Création des objets pour la commune de Nantes et le département de Loire-Atlantique
+nantes_objet <- creer_commune(nantes_data)
+loire_atlantique_objet <- creer_departement(loire_atlantique_data)
+
+
+summary.commune(nantes_objet)
+summary.departement(loire_atlantique_objet)
+
 
 
 ```
 
-#Visualisation des données
+```{r}
+summary.commune <- function(object, ...) {
+  if (!inherits(object, "commune")) {
+    stop("L'objet n'est pas de la classe 'commune'")
+  }
+  
+  # Exemple de résumé : afficher le nombre total d'élus dans la commune
+  nombre_elus <- nrow(object)
+  cat("Résumé de la commune :\n")
+  cat("Nombre total d'élus :", nombre_elus, "\n")
+  
+ 
+  repartition_csp <- table(object$Libellé.de.la.categorie.socio.professionnelle)
+  cat("\nRépartition par catégorie socio-professionnelle :\n")
+  print(repartition_csp)
+}
+
+summary(nantes_objet)
+
+
+```
+
+
 
 ```{r}
-col_pro <- "Libellé.de.la.categorie.socio.professionnelle"
-col_pro <- make.names(col_pro)
+# Nombre d'adjoints à Nantes
+nombre_adjoints <- compter_nombre_d_adjoints(nantes_objet)
+print(paste("Nombre d'adjoints à Nantes :", nombre_adjoints))
 
-ggplot(commune_objet, aes(x = .data[[col_pro]])) +
-  geom_bar(fill = "blue") +
-  coord_flip() +
-  labs(
-    title = paste("Répartition des professions - Commune", code_commune),
-    x = "Profession",
-    y = "Nombre d'élus"
-  ) +
-  theme_minimal()
+# Élu le plus âgé à Nantes
+elu_plus_age <- trouver_l_elu_le_plus_age(nantes_objet)
+print(paste("L'élu le plus âgé de Nantes est :", elu_plus_age$Nom, elu_plus_age$Prénom, "(", elu_plus_age$Age, "ans)"))
 
+# Distribution des âges des élus à Nantes
+distribution_age <- calcul_distribution_age(nantes_objet)
+print("Distribution des âges des élus à Nantes :")
+print(distribution_age)
+
+```
+
+
+```{r}
+# Graphique de la répartition des professions à Nantes
+plot_code_professions(nantes_objet)
+
+# Graphique de la répartition des âges des élus à Nantes
+ggplot(distribution_age, aes(x = Age, y = Nombre)) +
+  geom_bar(stat = "identity", fill = "blue") +
+  theme_minimal() +
+  labs(title = "Répartition des âges des élus à Nantes", x = "Âge", y = "Nombre d'élus")
+
+```
+
+#visualisation des données
+```{r}
+# Résumé graphique pour Nantes et Loire-Atlantique
+plot.commune(nantes_objet)
+plot.departement(loire_atlantique_objet)
+
+```
+
+
+```{r}
+quarto::quarto_render(
+  input = "inst/rapport.qmd",
+  execute_params = list(
+    commune = "44109",  # Nantes
+    departement = "44"  # Loire-Atlantique
+  )
+)
 
 ```
 

@@ -1,0 +1,8 @@
+# Utilisation de summary.commune
+summary.commune("Nantes")
+
+# Utilisation de summary.departement
+summary.departement("Loire-Atlantique")
+
+# Génération d'un rapport
+generer_rapport("Nantes", "Loire-Atlantique", "rapport.html")

@@ -1,9 +1,9 @@
 Package: projetFinal
-Title: What the Package Does (One Line, Title Case)
+Title: Mon package d'analyse des données communales et départementales
+Description: Ce package permet d'analyser les données par commune et département et de générer un rapport au format Quarto.
 Version: 0.0.0.9000
 Authors@R: 
-    person("First", "Last", , "first.last@example.com", role = c("aut", "cre"))
-Description: What the package does (one paragraph).
+    person("Martinez", "Estelle", role = c("aut", "cre"))
 License: `use_mit_license()`, `use_gpl3_license()` or friends to pick a
     license
 Encoding: UTF-8
